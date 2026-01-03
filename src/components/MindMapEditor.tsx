@@ -16,12 +16,17 @@ import MindMapNode from './MindMapNode';
 import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 
 const nodeTypes = {
   mindMapNode: MindMapNode,
 };
 
-function MindMapEditorInner() {
+interface MindMapEditorInnerProps {
+  onGoHome?: () => void;
+}
+
+function MindMapEditorInner({ onGoHome }: MindMapEditorInnerProps) {
   const {
     nodes,
     edges,
@@ -34,6 +39,8 @@ function MindMapEditorInner() {
     setSelectedNode,
     mapName,
     setMapName,
+    edgeStyle,
+    saveCurrentMap,
   } = useMindMapStore();
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -49,11 +56,41 @@ function MindMapEditorInner() {
         return;
       }
 
+      // Ctrl/Cmd + S to save
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        saveCurrentMap();
+        toast({
+          title: 'Saved!',
+          description: 'Your mind map has been saved.',
+        });
+        return;
+      }
+
       switch (event.key) {
         case 'a':
         case 'A':
           event.preventDefault();
-          addNode(selectedNodeId || undefined);
+          addNode(selectedNodeId || undefined, 'text');
+          break;
+        case 'i':
+        case 'I':
+          event.preventDefault();
+          addNode(selectedNodeId || undefined, 'image');
+          toast({
+            title: 'Image node added',
+            description: 'Select the node and add an image URL in the properties panel.',
+          });
+          break;
+        case 'Tab':
+          if (selectedNodeId) {
+            event.preventDefault();
+            addNode(selectedNodeId, 'text');
+            toast({
+              title: 'Sub-node added',
+              description: 'A new child node has been created.',
+            });
+          }
           break;
         case 'Delete':
         case 'Backspace':
@@ -67,7 +104,7 @@ function MindMapEditorInner() {
           break;
       }
     },
-    [addNode, deleteNode, selectedNodeId, setSelectedNode]
+    [addNode, deleteNode, selectedNodeId, setSelectedNode, saveCurrentMap]
   );
 
   useEffect(() => {
@@ -144,7 +181,7 @@ function MindMapEditorInner() {
           fitView
           fitViewOptions={{ padding: 0.3 }}
           defaultEdgeOptions={{
-            type: 'smoothstep',
+            type: edgeStyle,
             style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
           }}
           connectionLineStyle={{ strokeWidth: 2, stroke: 'hsl(var(--primary))' }}
@@ -170,6 +207,7 @@ function MindMapEditorInner() {
                 teal: 'hsl(173 80% 40%)',
                 yellow: 'hsl(45 93% 47%)',
                 gray: 'hsl(220 9% 46%)',
+                transparent: 'hsl(220 13% 91%)',
               };
               return colors[node.data?.color as string] || colors.blue;
             }}
@@ -178,7 +216,7 @@ function MindMapEditorInner() {
 
           {/* Floating Toolbar */}
           <Panel position="bottom-center" className="mb-4">
-            <Toolbar />
+            <Toolbar onGoHome={onGoHome} />
           </Panel>
 
           {/* Properties Panel */}
@@ -191,10 +229,14 @@ function MindMapEditorInner() {
   );
 }
 
-export default function MindMapEditor() {
+interface MindMapEditorProps {
+  onGoHome?: () => void;
+}
+
+export default function MindMapEditor({ onGoHome }: MindMapEditorProps) {
   return (
     <ReactFlowProvider>
-      <MindMapEditorInner />
+      <MindMapEditorInner onGoHome={onGoHome} />
     </ReactFlowProvider>
   );
 }

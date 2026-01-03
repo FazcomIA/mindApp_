@@ -7,16 +7,27 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  LucideIcon
+  LucideIcon,
+  ImageIcon,
+  GitBranch,
+  Home
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useMindMapStore } from '@/store/mindMapStore';
+import { useMindMapStore, EdgeStyle } from '@/store/mindMapStore';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 import { useReactFlow } from 'reactflow';
 import { toast } from '@/hooks/use-toast';
 
@@ -33,29 +44,54 @@ interface DividerItem {
   type: 'divider';
 }
 
-type ToolbarItem = ToolItem | DividerItem;
+interface DropdownItem {
+  type: 'dropdown';
+  icon: LucideIcon;
+  label: string;
+}
+
+type ToolbarItem = ToolItem | DividerItem | DropdownItem;
 
 interface ToolbarProps {
   className?: string;
+  onGoHome?: () => void;
 }
 
-export default function Toolbar({ className }: ToolbarProps) {
+const edgeStyles: { value: EdgeStyle; label: string }[] = [
+  { value: 'smoothstep', label: 'Smooth Step' },
+  { value: 'bezier', label: 'Bezier Curve' },
+  { value: 'straight', label: 'Straight Line' },
+  { value: 'step', label: 'Step' },
+];
+
+export default function Toolbar({ className, onGoHome }: ToolbarProps) {
   const { 
     selectedNodeId, 
     addNode, 
     deleteNode, 
     clearMap, 
     exportToJson, 
-    importFromJson 
+    importFromJson,
+    edgeStyle,
+    setEdgeStyle,
+    saveCurrentMap,
   } = useMindMapStore();
   
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
   const handleAddNode = () => {
-    addNode(selectedNodeId || undefined);
+    addNode(selectedNodeId || undefined, 'text');
     toast({
       title: 'Node added',
       description: 'Double-click to edit the node text.',
+    });
+  };
+
+  const handleAddImageNode = () => {
+    addNode(selectedNodeId || undefined, 'image');
+    toast({
+      title: 'Image node added',
+      description: 'Select the node and add an image URL in the properties panel.',
     });
   };
 
@@ -115,33 +151,20 @@ export default function Toolbar({ className }: ToolbarProps) {
     setTimeout(() => fitView({ padding: 0.5 }), 100);
   };
 
-  const tools: ToolbarItem[] = [
-    { 
-      icon: Plus, 
-      label: 'Add Node', 
-      onClick: handleAddNode, 
-      shortcut: 'A',
-      variant: 'primary'
-    },
-    { 
-      icon: Trash2, 
-      label: 'Delete Node', 
-      onClick: handleDeleteNode, 
-      disabled: !selectedNodeId || selectedNodeId === 'root',
-      shortcut: 'Del' 
-    },
-    { type: 'divider' },
-    { icon: ZoomIn, label: 'Zoom In', onClick: () => zoomIn(), shortcut: '+' },
-    { icon: ZoomOut, label: 'Zoom Out', onClick: () => zoomOut(), shortcut: '-' },
-    { icon: Maximize2, label: 'Fit View', onClick: () => fitView({ padding: 0.2 }) },
-    { type: 'divider' },
-    { icon: Download, label: 'Export JSON', onClick: handleExport },
-    { icon: Upload, label: 'Import JSON', onClick: handleImport },
-    { icon: RotateCcw, label: 'Clear Map', onClick: handleClear },
-  ];
+  const handleSave = () => {
+    saveCurrentMap();
+    toast({
+      title: 'Saved!',
+      description: 'Your mind map has been saved.',
+    });
+  };
 
-  const isDivider = (item: ToolbarItem): item is DividerItem => {
-    return 'type' in item && item.type === 'divider';
+  const handleEdgeStyleChange = (style: EdgeStyle) => {
+    setEdgeStyle(style);
+    toast({
+      title: 'Line style changed',
+      description: `Connections now use ${edgeStyles.find(s => s.value === style)?.label.toLowerCase()}.`,
+    });
   };
 
   return (
@@ -151,43 +174,237 @@ export default function Toolbar({ className }: ToolbarProps) {
       transition={{ delay: 0.2, duration: 0.3 }}
       className={`toolbar flex items-center gap-1 px-3 py-2 ${className}`}
     >
-      {tools.map((tool, index) => {
-        if (isDivider(tool)) {
-          return (
-            <div 
-              key={`divider-${index}`} 
-              className="w-px h-6 bg-border mx-1" 
-            />
-          );
-        }
-
-        const Icon = tool.icon;
-        const isPrimary = tool.variant === 'primary';
-
-        return (
-          <Tooltip key={tool.label}>
+      {/* Home Button */}
+      {onGoHome && (
+        <>
+          <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={isPrimary ? 'default' : 'ghost'}
+                variant="ghost"
                 size="icon"
-                onClick={tool.onClick}
-                disabled={tool.disabled}
-                className={isPrimary ? 'bg-primary hover:bg-primary/90' : 'toolbar-button'}
+                onClick={onGoHome}
+                className="toolbar-button"
               >
-                <Icon className="h-4 w-4" />
+                <Home className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="flex items-center gap-2">
-              <span>{tool.label}</span>
-              {tool.shortcut && (
-                <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">
-                  {tool.shortcut}
-                </kbd>
-              )}
+            <TooltipContent side="bottom">
+              <span>Home</span>
             </TooltipContent>
           </Tooltip>
-        );
-      })}
+          <div className="w-px h-6 bg-border mx-1" />
+        </>
+      )}
+
+      {/* Add Node */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="default"
+            size="icon"
+            onClick={handleAddNode}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="flex items-center gap-2">
+          <span>Add Node</span>
+          <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">A</kbd>
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Add Image Node */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleAddImageNode}
+            className="toolbar-button"
+          >
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="flex items-center gap-2">
+          <span>Add Image</span>
+          <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">I</kbd>
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Delete Node */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDeleteNode}
+            disabled={!selectedNodeId || selectedNodeId === 'root'}
+            className="toolbar-button"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="flex items-center gap-2">
+          <span>Delete Node</span>
+          <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">Del</kbd>
+        </TooltipContent>
+      </Tooltip>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Edge Style Dropdown */}
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="toolbar-button">
+                <GitBranch className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <span>Line Style</span>
+          </TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="center">
+          <DropdownMenuLabel>Connection Style</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {edgeStyles.map((style) => (
+            <DropdownMenuItem
+              key={style.value}
+              onClick={() => handleEdgeStyleChange(style.value)}
+              className={edgeStyle === style.value ? 'bg-secondary' : ''}
+            >
+              {style.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Zoom Controls */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => zoomIn()}
+            className="toolbar-button"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="flex items-center gap-2">
+          <span>Zoom In</span>
+          <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">+</kbd>
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => zoomOut()}
+            className="toolbar-button"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="flex items-center gap-2">
+          <span>Zoom Out</span>
+          <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">-</kbd>
+        </TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => fitView({ padding: 0.2 })}
+            className="toolbar-button"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span>Fit View</span>
+        </TooltipContent>
+      </Tooltip>
+
+      <div className="w-px h-6 bg-border mx-1" />
+
+      {/* Save */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSave}
+            className="toolbar-button"
+          >
+            <Download className="h-4 w-4 rotate-180" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="flex items-center gap-2">
+          <span>Save</span>
+          <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">Ctrl+S</kbd>
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Export */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleExport}
+            className="toolbar-button"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span>Export JSON</span>
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Import */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleImport}
+            className="toolbar-button"
+          >
+            <Upload className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span>Import JSON</span>
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Clear */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClear}
+            className="toolbar-button"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span>Clear Map</span>
+        </TooltipContent>
+      </Tooltip>
     </motion.div>
   );
 }
