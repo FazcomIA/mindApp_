@@ -15,6 +15,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        serif: ['"Source Serif 4"', 'Georgia', 'serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+        handwriting: ['Caveat', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",
