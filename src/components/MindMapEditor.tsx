@@ -1,10 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import ReactFlow, {
-  Background,
   Controls,
   MiniMap,
   ReactFlowProvider,
-  BackgroundVariant,
   Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -17,9 +15,15 @@ import Toolbar from './Toolbar';
 import PropertiesPanel from './PropertiesPanel';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import CustomMindMapEdge from './Edge/CustomMindMapEdge';
 
 const nodeTypes = {
   mindMapNode: MindMapNode,
+};
+
+const edgeTypes = {
+  mindmap: CustomMindMapEdge,
 };
 
 interface MindMapEditorInnerProps {
@@ -40,7 +44,11 @@ function MindMapEditorInner({ onGoHome }: MindMapEditorInnerProps) {
     mapName,
     setMapName,
     edgeStyle,
+    edgeColor,
+    edgeLineStyle,
     saveCurrentMap,
+    undo,
+    redo,
   } = useMindMapStore();
 
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -53,6 +61,17 @@ function MindMapEditorInner({ onGoHome }: MindMapEditorInnerProps) {
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Undo/Redo shortcuts
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
         return;
       }
 
@@ -104,7 +123,7 @@ function MindMapEditorInner({ onGoHome }: MindMapEditorInnerProps) {
           break;
       }
     },
-    [addNode, deleteNode, selectedNodeId, setSelectedNode, saveCurrentMap]
+    [addNode, deleteNode, selectedNodeId, setSelectedNode, saveCurrentMap, undo, redo]
   );
 
   useEffect(() => {
@@ -143,7 +162,7 @@ function MindMapEditorInner({ onGoHome }: MindMapEditorInnerProps) {
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-sm">M</span>
           </div>
-          
+
           {isEditingTitle ? (
             <Input
               value={titleValue}
@@ -164,8 +183,11 @@ function MindMapEditorInner({ onGoHome }: MindMapEditorInnerProps) {
           )}
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          {nodes.length} nodes • {edges.length} connections
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <div className="text-sm text-muted-foreground">
+            {nodes.length} nodes • {edges.length} connections
+          </div>
         </div>
       </motion.header>
 
@@ -178,23 +200,32 @@ function MindMapEditorInner({ onGoHome }: MindMapEditorInnerProps) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           fitView
           fitViewOptions={{ padding: 0.3 }}
           defaultEdgeOptions={{
             type: edgeStyle,
-            style: { strokeWidth: 2, stroke: 'hsl(var(--primary))' },
+            style: {
+              strokeWidth: 2,
+              stroke: edgeColor,
+              strokeDasharray: edgeLineStyle === 'dashed' ? '5,5' : undefined,
+            },
           }}
-          connectionLineStyle={{ strokeWidth: 2, stroke: 'hsl(var(--primary))' }}
+          connectionLineStyle={{
+            strokeWidth: 2,
+            stroke: edgeColor,
+            strokeDasharray: edgeLineStyle === 'dashed' ? '5,5' : undefined,
+          }}
           className="canvas-background"
           onPaneClick={() => setSelectedNode(null)}
         >
-          <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-          
-          <Controls 
+
+
+          <Controls
             className="!bg-card !border-border !shadow-lg"
             showInteractive={false}
           />
-          
+
           <MiniMap
             className="!bg-card !border-border"
             nodeColor={(node) => {

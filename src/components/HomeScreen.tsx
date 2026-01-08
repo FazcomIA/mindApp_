@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 type SortBy = 'name' | 'createdAt' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
@@ -158,6 +159,7 @@ export default function HomeScreen({ onOpenEditor }: HomeScreenProps) {
             </div>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <Button variant="outline" onClick={handleImport}>
                 <Upload className="h-4 w-4 mr-2" />
                 Import JSON

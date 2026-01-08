@@ -1,8 +1,8 @@
-import { 
-  Plus, 
-  Trash2, 
-  Download, 
-  Upload, 
+import {
+  Plus,
+  Trash2,
+  Download,
+  Upload,
   RotateCcw,
   ZoomIn,
   ZoomOut,
@@ -10,10 +10,12 @@ import {
   LucideIcon,
   ImageIcon,
   GitBranch,
-  Home
+  Home,
+  Palette,
+  Minus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useMindMapStore, EdgeStyle } from '@/store/mindMapStore';
+import { useMindMapStore, EdgeStyle, EdgeLineStyle } from '@/store/mindMapStore';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -65,18 +67,22 @@ const edgeStyles: { value: EdgeStyle; label: string }[] = [
 ];
 
 export default function Toolbar({ className, onGoHome }: ToolbarProps) {
-  const { 
-    selectedNodeId, 
-    addNode, 
-    deleteNode, 
-    clearMap, 
-    exportToJson, 
+  const {
+    selectedNodeId,
+    addNode,
+    deleteNode,
+    clearMap,
+    exportToJson,
     importFromJson,
     edgeStyle,
     setEdgeStyle,
+    edgeColor,
+    setEdgeColor,
+    edgeLineStyle,
+    setEdgeLineStyle,
     saveCurrentMap,
   } = useMindMapStore();
-  
+
   const { zoomIn, zoomOut, fitView } = useReactFlow();
 
   const handleAddNode = () => {
@@ -281,6 +287,80 @@ export default function Toolbar({ className, onGoHome }: ToolbarProps) {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Edge Color */}
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="toolbar-button">
+                <Palette className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <span>Line Color</span>
+          </TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="center">
+          <DropdownMenuLabel>Line Color</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <div className="p-2">
+            <input
+              type="color"
+              value={edgeColor.startsWith('hsl') ? '#3b82f6' : edgeColor}
+              onChange={(e) => setEdgeColor(e.target.value)}
+              className="w-full h-8 rounded cursor-pointer border border-border"
+            />
+          </div>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setEdgeColor('hsl(var(--edge-primary))')}>
+            Default
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEdgeColor('hsl(var(--primary))')}>
+            Primary
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEdgeColor('hsl(var(--accent))')}>
+            Accent
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEdgeColor('#3b82f6')}>
+            Blue
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEdgeColor('#8b5cf6')}>
+            Purple
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEdgeColor('#10b981')}>
+            Green
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEdgeColor('#f59e0b')}>
+            Orange
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setEdgeColor('#ef4444')}>
+            Red
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Edge Line Style (Solid/Dashed) */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setEdgeLineStyle(edgeLineStyle === 'solid' ? 'dashed' : 'solid')}
+            className="toolbar-button"
+          >
+            {edgeLineStyle === 'dashed' ? (
+              <Minus className="h-4 w-4" />
+            ) : (
+              <GitBranch className="h-4 w-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <span>{edgeLineStyle === 'solid' ? 'Solid' : 'Dashed'} Line</span>
+        </TooltipContent>
+      </Tooltip>
 
       <div className="w-px h-6 bg-border mx-1" />
 

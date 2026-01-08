@@ -1,9 +1,9 @@
+/* Mind Map Editor Design System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Caveat:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Roboto+Slab:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=Patrick+Hand&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Mind Map Editor Design System */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Caveat:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -51,6 +51,9 @@
     --node-teal: 173 80% 40%;
     --node-yellow: 45 93% 47%;
     --node-gray: 220 9% 46%;
+    
+    /* Edges */
+    --edge-primary: 220 13% 85%;
 
     /* Borders & Inputs */
     --border: 220 13% 91%;
@@ -221,13 +224,7 @@
 }
 
 .react-flow__edge-path {
-  stroke: hsl(var(--primary));
   stroke-width: 2;
-}
-
-.react-flow__edge.selected .react-flow__edge-path {
-  stroke: hsl(var(--accent));
-  stroke-width: 3;
 }
 
 .react-flow__handle {

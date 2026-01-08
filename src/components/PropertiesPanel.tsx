@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Palette, Type, FileText, Image as ImageIcon, PaintBucket, Pipette } from 'lucide-react';
-import { useMindMapStore, NodeColor, TextColor, FontFamily } from '@/store/mindMapStore';
+import { X, Palette, Type, FileText, Image as ImageIcon, PaintBucket, Pipette, Plus, Trash2 } from 'lucide-react';
+import { useMindMapStore, NodeColor, TextColor, FontFamily, TextSize } from '@/store/mindMapStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,20 @@ const fontFamilies: { value: FontFamily; label: string }[] = [
   { value: 'serif', label: 'Serif' },
   { value: 'mono', label: 'Monospace' },
   { value: 'handwriting', label: 'Handwriting' },
+  { value: 'modern', label: 'Modern' },
+  { value: 'slab', label: 'Slab Serif' },
+  { value: 'condensed', label: 'Condensed' },
+  { value: 'marker', label: 'Marker' },
+];
+
+const textSizes: { value: TextSize; label: string }[] = [
+  { value: 'xs', label: 'Extra Small' },
+  { value: 'sm', label: 'Small' },
+  { value: 'base', label: 'Normal' },
+  { value: 'lg', label: 'Large' },
+  { value: 'xl', label: 'Extra Large' },
+  { value: '2xl', label: '2x Large' },
+  { value: '3xl', label: '3x Large' },
 ];
 
 interface PropertiesPanelProps {
@@ -46,8 +60,15 @@ interface PropertiesPanelProps {
 }
 
 export default function PropertiesPanel({ className }: PropertiesPanelProps) {
-  const { nodes, selectedNodeId, updateNodeData, setSelectedNode } = useMindMapStore();
-  
+  const {
+    nodes,
+    selectedNodeId,
+    updateNodeData,
+    setSelectedNode,
+    addNode, // Use addNode instead of topic functions
+    addToHistory, // Import addToHistory
+  } = useMindMapStore();
+
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
@@ -79,8 +100,7 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
 
   const handleColorChange = (color: NodeColor) => {
     if (selectedNodeId) {
-      updateNodeData(selectedNodeId, { color, backgroundColor: undefined });
-      setCustomBgColor('');
+      updateNodeData(selectedNodeId, { color });
     }
   };
 
@@ -96,6 +116,12 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
     }
   };
 
+  const handleTextSizeChange = (textSize: TextSize) => {
+    if (selectedNodeId) {
+      updateNodeData(selectedNodeId, { textSize });
+    }
+  };
+
   const handleImageUrlChange = (value: string) => {
     setImageUrl(value);
     if (selectedNodeId) {
@@ -106,7 +132,7 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
   const handleCustomBgColorChange = (value: string) => {
     setCustomBgColor(value);
     if (selectedNodeId && value) {
-      updateNodeData(selectedNodeId, { backgroundColor: value, color: 'transparent' });
+      updateNodeData(selectedNodeId, { backgroundColor: value });
     }
   };
 
@@ -143,6 +169,7 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
               <Input
                 value={label}
                 onChange={(e) => handleLabelChange(e.target.value)}
+                onFocus={() => addToHistory()}
                 placeholder="Enter node label..."
                 className="bg-secondary/50"
               />
@@ -158,6 +185,7 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
                 <Input
                   value={imageUrl}
                   onChange={(e) => handleImageUrlChange(e.target.value)}
+                  onFocus={() => addToHistory()}
                   placeholder="https://example.com/image.jpg"
                   className="bg-secondary/50"
                 />
@@ -174,6 +202,7 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
                 <Textarea
                   value={description}
                   onChange={(e) => handleDescriptionChange(e.target.value)}
+                  onFocus={() => addToHistory()}
                   placeholder="Add a description..."
                   className="bg-secondary/50 resize-none h-20"
                 />
@@ -186,27 +215,49 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
                 <Type className="h-3.5 w-3.5" />
                 Font
               </Label>
-              <Select 
-                value={selectedNode.data.fontFamily || 'default'} 
-                onValueChange={(value) => handleFontFamilyChange(value as FontFamily)}
-              >
-                <SelectTrigger className="bg-secondary/50">
-                  <SelectValue placeholder="Select font" />
-                </SelectTrigger>
-                <SelectContent>
-                  {fontFamilies.map((font) => (
-                    <SelectItem key={font.value} value={font.value}>
-                      <span className={cn(
-                        font.value === 'serif' && 'font-serif',
-                        font.value === 'mono' && 'font-mono',
-                        font.value === 'handwriting' && 'font-handwriting'
-                      )}>
-                        {font.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <Select
+                  value={selectedNode.data.fontFamily || 'default'}
+                  onValueChange={(value) => handleFontFamilyChange(value as FontFamily)}
+                >
+                  <SelectTrigger className="bg-secondary/50">
+                    <SelectValue placeholder="Font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fontFamilies.map((font) => (
+                      <SelectItem key={font.value} value={font.value}>
+                        <span className={cn(
+                          font.value === 'serif' && 'font-serif',
+                          font.value === 'mono' && 'font-mono',
+                          font.value === 'handwriting' && 'font-handwriting',
+                          font.value === 'modern' && 'font-modern',
+                          font.value === 'slab' && 'font-slab',
+                          font.value === 'condensed' && 'font-condensed',
+                          font.value === 'marker' && 'font-marker'
+                        )}>
+                          {font.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={selectedNode.data.textSize || 'base'}
+                  onValueChange={(value) => handleTextSizeChange(value as TextSize)}
+                >
+                  <SelectTrigger className="bg-secondary/50">
+                    <SelectValue placeholder="Size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {textSizes.map((size) => (
+                      <SelectItem key={size.value} value={size.value}>
+                        {size.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {/* Text Color */}
@@ -241,15 +292,40 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
                 {nodeColors.map((color) => (
                   <button
                     key={color.value}
-                    onClick={() => handleColorChange(color.value)}
+                    onClick={() => {
+                      // Clear custom border color when selecting a preset
+                      if (selectedNodeId) {
+                        updateNodeData(selectedNodeId, { color: color.value, borderColor: undefined });
+                      }
+                    }}
                     className={cn(
                       'color-dot',
                       color.class,
-                      selectedNode.data.color === color.value && !selectedNode.data.backgroundColor && 'selected ring-foreground'
+                      selectedNode.data.color === color.value && !selectedNode.data.borderColor && !selectedNode.data.backgroundColor && 'selected ring-foreground'
                     )}
                     title={color.label}
                   />
                 ))}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <input
+                  type="color"
+                  value={selectedNode.data.borderColor || '#000000'}
+                  onChange={(e) => selectedNodeId && updateNodeData(selectedNodeId, { borderColor: e.target.value })}
+                  className="w-8 h-8 rounded cursor-pointer border border-border p-0"
+                  title="Custom Border Color"
+                />
+                <span className="text-xs text-muted-foreground">Custom</span>
+                {selectedNode.data.borderColor && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => selectedNodeId && updateNodeData(selectedNodeId, { borderColor: undefined })}
+                    className="h-6 px-2 text-[10px]"
+                  >
+                    Clear
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -273,8 +349,8 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
                   className="bg-secondary/50 flex-1"
                 />
                 {customBgColor && (
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => {
                       setCustomBgColor('');
@@ -288,6 +364,30 @@ export default function PropertiesPanel({ className }: PropertiesPanelProps) {
                 )}
               </div>
             </div>
+
+            {/* Topics and Sub-topics */}
+            {!isImageNode && (
+              <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2 text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5" />
+                    Connected Topics
+                  </Label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => selectedNodeId && addNode(selectedNodeId)}
+                    className="h-7 px-2"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Add Child Node
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Click to create a new node connected to this one.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 pt-4 border-t border-border">

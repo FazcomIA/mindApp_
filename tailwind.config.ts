@@ -18,6 +18,10 @@ export default {
         serif: ['"Source Serif 4"', 'Georgia', 'serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
         handwriting: ['Caveat', 'cursive'],
+        modern: ['Montserrat', 'sans-serif'],
+        slab: ['"Roboto Slab"', 'serif'],
+        condensed: ['Oswald', 'sans-serif'],
+        marker: ['"Patrick Hand"', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",
